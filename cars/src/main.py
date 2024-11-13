@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from pathlib import Path
 import json
 import random
@@ -8,12 +8,15 @@ import os
 import threading
 from werkzeug.exceptions import HTTPException
 
-MANAGMENT_URL = 'http://management_system:8000'
+MANAGMENT_URL = 'http://receiver-car:6070'
 
 HOST = '0.0.0.0'
 PORT = 8000
 MODULE_NAME = os.getenv('MODULE_NAME')
 app = Flask(__name__)
+
+data = None
+flag = True
 
 
 class Car:
@@ -111,6 +114,7 @@ cars = load_cars_from_json(f'{BASE_DIR}/data/cars.json')
 @app.route('/car/status/all', methods=['GET'])
 def get_all_car_statuses():
     statuses = [car.get_status() for car in cars]
+    requests.post(f'{MANAGMENT_URL}/car/status/all', json={'cars': statuses}) # Реализация разделения модуля коммуникации (ответы приходят на отдельный handler)
     return jsonify(statuses)
 
 
@@ -131,14 +135,23 @@ def stop_car(brand):
     car = next((car for car in cars if car.brand.lower() == brand.lower()), None)
     if car:
         status = car.get_status()
-        invoice_id = requests.post(f'{MANAGMENT_URL}/return/{car.occupied_by}', json={'status': status})
-        if invoice_id.status_code == 200:
-            invoice_id = invoice_id.json()['id']
+        response = requests.post(f'{MANAGMENT_URL}/return/{car.occupied_by}', json={'status': status})
+        if response.status_code == 200:
             message = car.stop()
-            return jsonify({"message": message, 'invoice_id': invoice_id})
+            return jsonify({"message": message})
         else:
             message = car.stop()
             return jsonify({"message": message}), 404
+    else:
+        return jsonify({"error": "Автомобиль не найден."}), 404
+
+
+@app.route('/emergency/<string:brand>', methods=['POST'])
+def emergency(brand):
+    car = next((car for car in cars if car.brand.lower() == brand.lower()), None)
+    if car:
+        message = car.stop()
+        return jsonify({"message": message})
     else:
         return jsonify({"error": "Автомобиль не найден."}), 404
 
@@ -148,20 +161,34 @@ def get_car_status(brand):
     car = next((car for car in cars if car.brand.lower() == brand.lower()), None)
     if car:
         status = car.get_status()
+        requests.post(f'{MANAGMENT_URL}/car/status', json={'status': status}) # Реализация разделения модуля коммуникации (ответы приходят на отдельный handler)
         return jsonify(status)
     else:
         return jsonify({"error": "Автомобиль не найден."}), 404
 
+@app.route('/access/<string:person>', methods=['POST']) # Реализация разделения модуля коммуникации (ответы приходят на отдельный handler)
+def access(person):
+    global data
+    global flag
+    data = request.json
+    flag = False # Реализация разделения модуля коммуникации
+    return jsonify("ok")
+
 
 @app.route('/car/occupy/<string:person>', methods=['POST'])
 def occupy_car(person):
-    response = requests.post(f'{MANAGMENT_URL}/access/{person}')
-    if response.status_code == 200:
-        brand = response.json()['car']
+    global data
+    global flag
+    requests.post(f'{MANAGMENT_URL}/access/{person}')
+    while flag:
+        time.sleep(1) # Реализация разделения модуля коммуникации
+    if data['access']:
+        brand = data['car']
         car = next((car for car in cars if car.brand.lower() == brand.lower()), None)
         if car and person is not None:
-            tariff = response.json()['tariff']
+            tariff = data['tariff']
             message = car.occupy(person, tariff)
+            flag = True
             return jsonify({"access": True, "car": car.brand, "message": message})
         else:
             return jsonify({"access": False, "message": "Автомобиль не найден или не указан клиент."}), 404
