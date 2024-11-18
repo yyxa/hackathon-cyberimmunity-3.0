@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 MANAGMENT_URL = 'http://management_system:8000'
 PAYMENT_URL = 'http://payment_system:8000'
-CARS_URL = 'http://cars:8000'
+CARS_URL = 'http://car-network:8007'
 
 
 # Выбор и запрос авто (автоматически выбирает из свободных машин и выбирает тариф)

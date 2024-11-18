@@ -8,6 +8,7 @@ from enum import Enum
 from werkzeug.exceptions import HTTPException
 
 MANAGMENT_URL = 'http://management_system:8000'
+CARS_URL = 'http://car-network:8007'
 
 HOST = '0.0.0.0'
 PORT = 8000

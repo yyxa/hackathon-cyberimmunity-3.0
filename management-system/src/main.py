@@ -14,7 +14,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 PAYMENT_URL = 'http://payment_system:8000'
-CARS_URL = 'http://cars:8000'
+CARS_URL = 'http://car-network:8007'
 
 TARIFF = ["min", "hour"]
 

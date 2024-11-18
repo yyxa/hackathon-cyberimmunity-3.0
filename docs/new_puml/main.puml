@@ -1,0 +1,99 @@
+@startuml
+title Базовый сценарий поездки
+autonumber
+participant "Сетевой\nмодуль" as network
+participant "Верификация\nкоманд и\nуслуг" as verify_service
+participant "Верификация\nоплаты" as verify_payment
+participant "Менеджер\nкоманд и\nуслуг" as manager_service
+participant "Система\nмониторинга" as monitoring
+participant "Система анализа\nподачи энергии\nдля услуг" as energy
+participant "Система датчиков\nвыскрытия обшивки" as skin_sensor
+participant "Контроль\nавтомобиля" as car_control
+participant "Модуль\nпроверки\nгеоданных" as verify_geo
+participant "Хранилище\nавторизованных\nрайонов со\nскоростными\nограничениями" as data
+participant "Модуль\nопределения\nскорости на\nоснове\nгеоданных" as get_speed_from_geo
+participant "Комплексирование" as complex
+participant "GPS\nМодуль" as gps
+participant "ГЛОНАСС\nМодуль" as glonass
+participant "Система\nуправления\nдвигателем" as engine
+participant "Модуль\nснижения\nскорости" as speed_lower
+participant "Система\nсоответствия\nводителя и\nклиента" as verify_driver
+participant "Камера" as camera
+participant "Модуль\nопределения\nскорости с\nкамеры" as get_speed_from_camera
+participant "Датчики\nскорости" as speed_sensors
+participant "ADAS" as adas
+participant "Валидация\nскорости" as verify_speed
+
+
+group контракт на поездку
+    network -> car_control: опрос\nавтомобилей
+    car_control --> network: статус\nавтомобиля
+
+    network -> verify_service: запрос\nдоступа
+    verify_service -> verify_service: валидация\nкоманды
+    verify_service --> network: запрос\nдоступа
+
+    network -> verify_service: разрешение\nдоступа и\nтарифный\nплан
+    verify_service -> verify_service: валидация\nкоманды
+    verify_service -> verify_payment: разрешение\nдоступа и\nтарифный\nплан
+    verify_payment -> network: проверка\nоплаты
+
+    network --> verify_service: оплата\nвалидна
+    verify_service -> verify_service: валидация\nкоманды
+    verify_service --> verify_payment: оплата\nвалидна
+    verify_payment --> verify_service: разрешение\nдоступа
+    verify_service --> network: разрешение\nдоступа
+
+    verify_service -> network: запрос\nавторизованных\nрайонов
+    network -> verify_geo: авторизованные\nрайоны
+    verify_geo -> data: проверка\nавторизованных\nрайонов и\nограничений\nскорости
+end
+
+group поездка
+    network -> verify_service: запрос\nоплачиваемойи\nуслуги
+    verify_service -> verify_service: валидация\nкоманды
+    verify_service -> verify_payment: запрос\nоплачиваемойи\nуслуги
+    verify_payment -> network: проверка\nоплаты
+
+    network --> verify_service: оплата\nвалидна
+    verify_service -> verify_service: валидация\nкоманды
+    verify_service --> verify_payment: оплата\nвалидна
+    verify_payment -> manager_service: оказание\nуслуги
+    verify_payment --> network: статус\nвыполнения\nзапроса\nна услугу
+
+    loop поездка
+        camera --> verify_driver: фото\nводителя
+        verify_driver -> verify_driver: проверка\nнейросетью\nна соответствие\nс фотографией\nв профиле
+
+        camera --> get_speed_from_camera: несколько\nфотографий
+        get_speed_from_camera -> get_speed_from_camera: определение\nскорости\nпо фотографиям
+        get_speed_from_camera --> verify_speed: скорость
+        adas --> verify_speed: скорость
+        adas --> verify_geo: скорость
+        speed_sensors --> verify_speed: скорость
+        gps --> get_speed_from_geo: геоданные
+        glonass --> get_speed_from_geo: геоданные
+        get_speed_from_geo -> get_speed_from_geo: определение\nскорости\nпо изменению\nгеоданных
+        get_speed_from_geo --> verify_speed: скорость\nи геоданные
+        get_speed_from_geo --> car_control: скорость\nи геоданные
+        verify_speed -> data: проверка\nскорости\nна соответствие\nскоростному\nрежиму
+        verify_speed --> car_control: результат\nпроверки
+
+        gps --> complex: геоданные
+        glonass --> complex: геоданные
+        complex -> complex: валидация\nгеоданных
+        complex --> verify_geo: геоданные
+        verify_geo -> data: проверка\nгеоданных\nна соответствие\nавторизованному\nрайону
+        verify_geo --> car_control: результат\nпроверки
+        car_control --> network: статус\nавтомобиля
+    end
+end
+
+group завершение поездки и возврат авто
+    network -> verify_service: возврат\nавто
+    verify_service -> verify_service: валидация\nкоманды
+    verify_service -> car_control: возврат\nавто
+    car_control -> car_control: возврат\nавто
+    car_status --> network: возврат\nавто и\nсводка по\nпоездке
+end
+@enduml

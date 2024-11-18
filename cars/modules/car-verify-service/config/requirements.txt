@@ -1,0 +1,5 @@
+confluent-kafka==2.0.2
+configparser
+sqlalchemy
+requests
+Flask==2.2.5
