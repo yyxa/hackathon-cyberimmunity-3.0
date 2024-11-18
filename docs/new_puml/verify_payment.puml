@@ -1,0 +1,43 @@
+@startuml
+title Базовый сценарий поездки
+autonumber
+participant "Сетевой\nмодуль" as network
+participant "Верификация\nкоманд и\nуслуг" as verify_service
+participant "Верификация\nоплаты" as verify_payment
+participant "Менеджер\nкоманд и\nуслуг" as manager_service
+participant "Система\nмониторинга" as monitoring
+participant "Система анализа\nподачи энергии\nдля услуг" as energy
+participant "Система датчиков\nвыскрытия обшивки" as skin_sensor
+participant "Контроль\nавтомобиля" as car_control
+participant "Модуль\nпроверки\nгеоданных" as verify_geo
+participant "Хранилище\nавторизованных\nрайонов со\nскоростными\nограничениями" as data
+
+
+
+group контракт на поездку
+    network -> car_control: опрос\nавтомобилей
+    car_control --> network: статус\nавтомобиля
+
+    network -> verify_service: запрос\nдоступа
+    verify_service -> verify_service: валидация\nкоманды
+    verify_service --> network: запрос\nдоступа
+
+    network -> verify_service: разрешение\nдоступа и\nтарифный\nплан
+    verify_service -> verify_service: валидация\nкоманды
+    verify_service -> verify_payment: разрешение\nдоступа и\nтарифный\nплан
+    group пропуск этих шагов
+    verify_payment -> network: проверка\nоплаты
+
+    network --> verify_service: оплата\nвалидна()
+    verify_service -> verify_service: валидация\nкоманды
+    verify_service --> verify_payment: оплата\nвалидна
+    end
+    verify_payment -[#red]-> verify_service: разрешение\nдоступа
+    verify_service -[#red]-> network: разрешение\nдоступа
+
+    verify_service -[#red]> network: запрос\nавторизованных\nрайонов
+    network -[#red]> verify_geo: авторизованные\nрайоны
+    verify_geo -[#red]> data: проверка\nавторизованных\nрайонов и\nограничений\nскорости
+end
+
+@enduml

@@ -1,0 +1,28 @@
+@startuml
+title Базовый сценарий поездки
+autonumber
+participant "Сетевой\nмодуль" as network
+participant "Контроль\nавтомобиля" as car_control
+participant "Модуль\nпроверки\nгеоданных" as verify_geo
+participant "Хранилище\nавторизованных\nрайонов со\nскоростными\nограничениями" as data
+participant "Модуль\nопределения\nскорости на\nоснове\nгеоданных" as get_speed_from_geo
+participant "Комплексирование" as complex
+participant "GPS\nМодуль" as gps
+participant "ГЛОНАСС\nМодуль" as glonass
+participant "Валидация\nскорости" as verify_speed
+
+
+    verify_geo -[#red]> data: проверка\nавторизованных\nрайонов и\nограничений\nскорости
+
+        verify_speed -[#red]> data: проверка\nскорости\nна соответствие\nскоростному\nрежиму
+        verify_speed -[#red]-> car_control: результат\nпроверки
+
+        gps --> complex: геоданные
+        glonass --> complex: геоданные
+        complex -> complex: валидация\nгеоданных
+        complex --> verify_geo: геоданные
+        verify_geo -[#red]> data: проверка\nгеоданных\nна соответствие\nавторизованному\nрайону
+        verify_geo -[#red]-> car_control: результат\nпроверки
+        car_control -[#red]-> network: статус\nавтомобиля
+
+@enduml

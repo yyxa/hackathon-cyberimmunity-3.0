@@ -1,0 +1,15 @@
+@startuml
+title Базовый сценарий поездки
+autonumber
+
+participant "Система\nсоответствия\nводителя и\nклиента" as verify_driver
+participant "Камера" as camera
+
+
+    loop поездка
+        camera -[#red]-> verify_driver: фото\nводителя
+        verify_driver -[#red]> verify_driver: проверка\nнейросетью\nна соответствие\nс фотографией\nв профиле
+
+    end
+
+@enduml

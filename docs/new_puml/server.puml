@@ -1,0 +1,20 @@
+@startuml
+title Базовый сценарий поездки
+autonumber
+participant "Сетевой\nмодуль" as network
+participant "Верификация\nкоманд и\nуслуг" as verify_service
+
+    network -[#red]> verify_service: запрос\nдоступа
+    verify_service -[#red]> verify_service: валидация\nкоманды
+    verify_service -[#red]-> network: запрос\nдоступа
+
+    network -[#red]> verify_service: разрешение\nдоступа и\nтарифный\nплан
+    verify_service -[#red]> verify_service: валидация\nкоманды
+    verify_service -[#red]> verify_payment: разрешение\nдоступа и\nтарифный\nплан
+    verify_payment -> network: проверка\nоплаты
+
+    network -[#green]-> verify_service: оплата\nневалидна
+    verify_service -[#green]> verify_service: валидация\nкоманды
+    verify_service -[#green]-> verify_payment: оплата\nневалидна
+
+@enduml

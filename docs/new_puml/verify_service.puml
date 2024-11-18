@@ -1,0 +1,12 @@
+@startuml
+title Базовый сценарий поездки
+autonumber
+participant "Сетевой\nмодуль" as network
+participant "Верификация\nкоманд и\nуслуг" as verify_service
+
+group контракт на поездку
+
+    network -[#red]> verify_service: запрос\nдоступа
+    verify_service -[#green]> verify_service: валидация\nкоманды
+
+@enduml

@@ -1,0 +1,43 @@
+@startuml
+title Базовый сценарий поездки
+autonumber
+participant "Контроль\nавтомобиля" as car_control
+participant "Модуль\nпроверки\nгеоданных" as verify_geo
+participant "Хранилище\nавторизованных\nрайонов со\nскоростными\nограничениями" as data
+participant "Модуль\nопределения\nскорости на\nоснове\nгеоданных" as get_speed_from_geo
+participant "Комплексирование" as complex
+participant "GPS\nМодуль" as gps
+participant "ГЛОНАСС\nМодуль" as glonass
+participant "Система\nуправления\nдвигателем" as engine
+participant "Модуль\nснижения\nскорости" as speed_lower
+participant "Система\nсоответствия\nводителя и\nклиента" as verify_driver
+participant "Камера" as camera
+participant "Модуль\nопределения\nскорости с\nкамеры" as get_speed_from_camera
+participant "Датчики\nскорости" as speed_sensors
+participant "ADAS" as adas
+participant "Валидация\nскорости" as verify_speed
+
+group поездка
+
+    loop поездка
+        camera --> verify_driver: фото\nводителя
+        verify_driver -> verify_driver: проверка\nнейросетью\nна соответствие\nс фотографией\nв профиле
+
+        camera --> get_speed_from_camera: несколько\nфотографий
+        get_speed_from_camera -> get_speed_from_camera: определение\nскорости\nпо фотографиям
+        get_speed_from_camera --> verify_speed: скорость
+        adas --> verify_speed: скорость
+        adas --> verify_geo: скорость
+        speed_sensors --> verify_speed: скорость
+        gps --> get_speed_from_geo: геоданные
+        glonass --> get_speed_from_geo: геоданные
+        get_speed_from_geo -> get_speed_from_geo: определение\nскорости\nпо изменению\nгеоданных
+        get_speed_from_geo --> verify_speed: скорость\nи геоданные
+        get_speed_from_geo --> car_control: скорость\nи геоданные
+        verify_speed -[#red]> data: проверка\nскорости\nна соответствие\nскоростному\nрежиму
+        verify_speed -[#red]-> car_control: результат\nпроверки
+    end
+end
+
+
+@enduml
